@@ -110,29 +110,29 @@ if __name__ == "__main__":
         if "rules" in library and (False if any([parse_rule(i, {}) for i in library["rules"]]) else True): continue
         sections = library["name"].split(":")
         data.append((library["downloads"]["artifact"]["url"], f"{DIRECTORY}/libraries/{'/'.join(sections[0].split('.'))}/{sections[1]}/{sections[2]}/{sections[1]}-{sections[2]}{'-' + sections[3] if 3 < len(sections) else ''}.jar", {"http": f"socks5h://{PROXY}", "https": f"socks5h://{PROXY}", "socks5": f"socks5h://{PROXY}"}, library["downloads"]["artifact"]["sha1"]))
-        if "natives" in library["name"]: natives.append((f"{DIRECTORY}/libraries/{'/'.join(sections[0].split('.'))}/{sections[1]}/{sections[2]}/{sections[1]}-{sections[2]}{'-' + sections[3] if 3 < len(sections) else ''}.jar"))
+        if "native" in library["name"]: natives.append((f"{DIRECTORY}/libraries/{'/'.join(sections[0].split('.'))}/{sections[1]}/{sections[2]}/{sections[1]}-{sections[2]}{'-' + sections[3] if 3 < len(sections) else ''}.jar"))
 
-    # delta = 1 / len(data)
+    delta = 1 / len(data)
     
-    # pool = multiprocessing.Pool(multiprocessing.cpu_count())
+    pool = multiprocessing.Pool(multiprocessing.cpu_count())
 
-    # print("")
-    # i, j = 0, 0
-    # for asset in data:
-    #     pool.apply_async(download, args=(asset, ), callback=download_callback)
+    print("")
+    i, j = 0, 0
+    for asset in data:
+        pool.apply_async(download, args=(asset, ), callback=download_callback)
     
-    # pool.close()
-    # pool.join()
+    pool.close()
+    pool.join()
 
-    # print("\n")
-    # pool = multiprocessing.Pool(multiprocessing.cpu_count())
+    print("\n")
+    pool = multiprocessing.Pool(multiprocessing.cpu_count())
 
-    # i, j = 0, 0
-    # for asset in data:
-    #     pool.apply_async(verify, args=(asset, ), callback=verify_callback)
+    i, j = 0, 0
+    for asset in data:
+        pool.apply_async(verify, args=(asset, ), callback=verify_callback)
     
-    # pool.close()
-    # pool.join()
+    pool.close()
+    pool.join()
     
     os.makedirs(os.path.dirname(f"{DIRECTORY}/versions/{VERSION}/natives/"), exist_ok=True)
     delta = 1 / len(natives)

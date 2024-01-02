@@ -74,10 +74,10 @@ if __name__ == "__main__":
 
     shutil.move(f"{DIRECTORY}/java/zulu21.30.15-ca-{TYPE.lower()}21.0.1-{operating_system}_{processor_architecture}", target)
 
+    if uname[0] != "Windows":
+        subprocess.run(["chmod", "+x", executable])
+    
     if uname[0] == "Darwin":
-        subprocess.run(["chmod", "+x", executable])
-    else:
-        subprocess.run(["chmod", "+x", executable])
         subprocess.run(["xattr", "-d", "com.apple.quarantine", executable])
 
     print(f"Testing Java {JAVA_VERSION} Azul Zulu {AZUL_VERSION} {TYPE.upper()}")
