@@ -1,7 +1,7 @@
 import json
-import os
 import platform
 import re
+import subprocess
 import sys
 import warnings
 warnings.filterwarnings("ignore")
@@ -78,22 +78,24 @@ def jvm_arguments(data):
     for argument in data["arguments"]["jvm"]:
         if isinstance(argument, dict):
             if "rules" in argument and (False if any([parse_rule(i, {}) for i in argument["rules"]]) else True): continue
-            arguments.append(argument["value"])
+            arguments.append(argument["value"][0])
         else:
-            if argument.find("${nativesDirectory}") != -1:
-                arguments.append(argument.replace("${nativesDirectory}", f"{DIRECTORY}/versions/{VERSION}/natives"))
+            if argument.find("${natives_directory}") != -1:
+                arguments.append(argument.replace("${natives_directory}", f"{DIRECTORY}/versions/{VERSION}/natives"))
             elif argument.find("${launcher_name}") != -1:
                 arguments.append(argument.replace("${launcher_name}", "technolauncher"))
             elif argument.find("${launcher_version}") != -1:
                 arguments.append(argument.replace("${launcher_version}", "1.0"))
             elif argument.find("${classpath}") != -1:
+                arguments.append("-cp")
                 arguments.append(argument.replace("${classpath}", classpath(data)))
-        
+    
+    return arguments
 
 def game_arguments(data):
     arguments = []
     
-    for argument in data["argumnets"]["game"]:
+    for argument in data["arguments"]["game"]:
         if not isinstance(argument, dict):
             arguments.append(argument)
     
@@ -110,6 +112,8 @@ def game_arguments(data):
             arguments[i] = data["assetIndex"]["id"]
         if argument == "${auth_uuid}":
             arguments[i] = UUID
+        if argument == "${auth_access_token}":
+            arguments[i] = TOKEN
         # if argument == "${clientid}":
         #     arguments[i] = USERNAME
         # if argument == "${auth_xuid}":
@@ -122,36 +126,6 @@ def game_arguments(data):
     return arguments
 
 if __name__ == "__main__":
-    """
-        options = {
-            # This is needed
-            "username": The Username,
-            "uuid": uuid of the user,
-            "token": the accessToken,
-            # This is optional
-            "executablePath": "java", # The path to the java executable
-            "defaultExecutablePath": "java", # The path to the java executable if the version.json has none
-            "jvmArguments": [], #The jvmArguments
-            "launcherName": "minecraft-launcher-lib", # The name of your launcher
-            "launcherVersion": "1.0", # The version of your launcher
-            "gameDirectory": "/home/user/.minecraft", # The gameDirectory (default is the path given in arguments)
-            "demo": False, # Run Minecraft in demo mode
-            "customResolution": False, # Enable custom resolution
-            "resolutionWidth": "854", # The resolution width
-            "resolutionHeight": "480", # The resolution heigth
-            "server": "example.com", # The IP of a server where Minecraft connect to after start
-            "port": "123", # The port of a server where Minecraft connect to after start
-            "nativesDirectory": "minecraft_directory/versions/version/natives", # The natives directory
-            "enableLoggingConfig": False, # Enable use of the log4j configuration file
-            "disableMultiplayer": False, # Disables the multiplayer
-            "disableChat": False, # Disables the chat
-            "quickPlayPath": None, # The Quick Play Path
-            "quickPlaySingleplayer": None, # The Quick Play Singleplayer
-            "quickPlayMultiplayer": None, # The Quick Play Multiplayer
-            "quickPlayRealms": None, # The Quick Play Realms
-        }
-    """
-
     with open(f"{DIRECTORY}/versions/{VERSION}/{VERSION}.json") as file:
         data = json.load(file)
 
@@ -165,4 +139,4 @@ if __name__ == "__main__":
     command.append(data["mainClass"])
     command += game_arguments(data)
     
-    print(command)
+    subprocess.run(command)
