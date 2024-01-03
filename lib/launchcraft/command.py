@@ -1,38 +1,9 @@
 import json
+import os
 import platform
 import re
 import subprocess
 import sys
-import warnings
-warnings.filterwarnings("ignore")
-
-DIRECTORY = "/Users/3124224/Library/Application Support/devnolauncher"
-VERSION = "1.20.4"
-PROXY = "192.168.86.68:1060"
-
-JAVA = {
-    "1.20.4": "21",
-    "1.8.9": "8",
-    "default": "21"
-}
-
-AZUL = {
-    "21": "21.30.15",
-    "8": "8.74.0.17",
-    "default": "21.30.15"
-}
-
-try:
-    JAVA_VERSION = JAVA[VERSION]
-except:
-    JAVA_VERSION = JAVA["default"]
-
-try:
-    AZUL_VERSION = AZUL[JAVA_VERSION]
-except:
-    AZUL_VERSION = AZUL["default"]
-
-TYPE = "jre"
 
 USERNAME = "TechnoDot"
 UUID = "9a467ecf8eaf4d9cb44050eb9b60581a"
@@ -60,19 +31,19 @@ def parse_rule(rule, options) -> bool:
 
     return not value
 
-def classpath(data):
+def classpath(data, version, directory):
     sep = ";" if platform.system() == "Windows" else ":"
     libraries = ""
 
     for library in data["libraries"]:
         if "rules" in library and (False if any([parse_rule(i, {}) for i in library["rules"]]) else True): continue
         sections = library["name"].split(":")
-        libraries += f"{DIRECTORY}/libraries/{'/'.join(sections[0].split('.'))}/{sections[1]}/{sections[2]}/{sections[1]}-{sections[2]}{'-' + sections[3] if 3 < len(sections) else ''}.jar{sep}"
+        libraries += f"{directory}/libraries/{'/'.join(sections[0].split('.'))}/{sections[1]}/{sections[2]}/{sections[1]}-{sections[2]}{'-' + sections[3] if 3 < len(sections) else ''}.jar{sep}"
 
-    libraries += f"{DIRECTORY}/versions/{VERSION}/{VERSION}.jar"
+    libraries += f"{directory}/versions/{version}/{version}.jar"
     return libraries
 
-def jvm_arguments(data):
+def jvm_arguments(data, version, directory):
     arguments = []
     
     for argument in data["arguments"]["jvm"]:
@@ -81,18 +52,18 @@ def jvm_arguments(data):
             arguments.append(argument["value"][0])
         else:
             if argument.find("${natives_directory}") != -1:
-                arguments.append(argument.replace("${natives_directory}", f"{DIRECTORY}/versions/{VERSION}/natives"))
+                arguments.append(argument.replace("${natives_directory}", f"{directory}/versions/{version}/natives"))
             elif argument.find("${launcher_name}") != -1:
                 arguments.append(argument.replace("${launcher_name}", "technolauncher"))
             elif argument.find("${launcher_version}") != -1:
                 arguments.append(argument.replace("${launcher_version}", "1.0"))
             elif argument.find("${classpath}") != -1:
                 arguments.append("-cp")
-                arguments.append(argument.replace("${classpath}", classpath(data)))
+                arguments.append(argument.replace("${classpath}", classpath(data, version, directory)))
     
     return arguments
 
-def game_arguments(data):
+def game_arguments(data, version, directory):
     arguments = []
     
     for argument in data["arguments"]["game"]:
@@ -102,41 +73,56 @@ def game_arguments(data):
     for i, argument in enumerate(arguments):
         if argument == "${auth_player_name}":
             arguments[i] = USERNAME
-        if argument == "${version_name}":
-            arguments[i] = VERSION
-        if argument == "${game_directory}":
-            arguments[i] = f"{DIRECTORY}/game"
-        if argument == "${assets_root}":
-            arguments[i] = f"{DIRECTORY}/assets"
-        if argument == "${assets_index_name}":
+        elif argument == "${version_name}":
+            arguments[i] = version
+        elif argument == "${game_directory}":
+            arguments[i] = f"{directory}/game"
+        elif argument == "${assets_root}":
+            arguments[i] = f"{directory}/assets"
+        elif argument == "${assets_index_name}":
             arguments[i] = data["assetIndex"]["id"]
-        if argument == "${auth_uuid}":
+        elif argument == "${auth_uuid}":
             arguments[i] = UUID
-        if argument == "${auth_access_token}":
+        elif argument == "${auth_access_token}":
             arguments[i] = TOKEN
-        # if argument == "${clientid}":
+        # elif argument == "${clientid}":
         #     arguments[i] = USERNAME
-        # if argument == "${auth_xuid}":
+        # elif argument == "${auth_xuid}":
         #     arguments[i] = USERNAME
-        if argument == "${user_type}":
+        elif argument == "${user_type}":
             arguments[i] = "msa"
-        if argument == "${version_type}":
-            arguments[i] = "release" if VERSION.find(".") != -1 else "snapshot"
+        elif argument == "${version_type}":
+            arguments[i] = "release" if version.find(".") != -1 else "snapshot"
 
     return arguments
+def run(directory, version, proxy, java_type="jre"):
+    directory = "/Users/3124224/Library/Application Support/devnolauncher"
+    version = "1.20.4"
 
-if __name__ == "__main__":
-    with open(f"{DIRECTORY}/versions/{VERSION}/{VERSION}.json") as file:
+    java = {
+        "1.20.4": "21",
+        "1.8.9": "8",
+        "default": "21"
+    }
+
+    try:
+        java_version = java[version]
+    except:
+        java_version = java["default"]
+
+    with open(f"{directory}/versions/{version}/{version}.json") as file:
         data = json.load(file)
 
     command = [{
-        "Windows": f"{DIRECTORY}/java/{JAVA_VERSION}/bin/java.exe",
-        "Darwin": f"{DIRECTORY}/java/{JAVA_VERSION}/zulu-{JAVA_VERSION}.{TYPE.lower()}/Contents/Home/bin/java",
-        "Linux": f"{DIRECTORY}/java/{JAVA_VERSION}/bin/java"
+        "Windows": f"{directory}/java/{java_version}/bin/java.exe",
+        "Darwin": f"{directory}/java/{java_version}/zulu-{java_version}.{java_type.lower()}/Contents/Home/bin/java",
+        "Linux": f"{directory}/java/{java_version}/bin/java"
     }[platform.system()]]
 
-    command += jvm_arguments(data)
+    command += jvm_arguments(data, version, directory)
     command.append(data["mainClass"])
-    command += game_arguments(data)
-    
+    command += game_arguments(data, version, directory)
+
+    print(f"Launching Minecraft {version}...\n\n{'=' * os.get_terminal_size().columns}\n")
+
     subprocess.run(command)

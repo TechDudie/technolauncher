@@ -11,11 +11,6 @@ import zipfile
 warnings.filterwarnings("ignore")
 import requests
 
-DIRECTORY = "/Users/3124224/Library/Application Support/devnolauncher"
-VERSION = "1.20.4"
-PROXY = "192.168.86.68:1060"
-
-LIBRARY_DATA = json.loads(open(f"{DIRECTORY}/versions/{VERSION}/{VERSION}.json").read())["libraries"]
 ARCH = {"X86_64": "x64", "ARM64": "arm64"}["".join([i if i in platform.version() else "" for i in ["X86_64", "ARM64"]])]
 WIDTH = os.get_terminal_size().columns
 
@@ -30,14 +25,6 @@ def parse_rule(rule, options) -> bool:
             elif os_value == "linux" and platform.system() != 'Linux': return value
         elif os_key == "arch" and os_value == "x86" and platform.architecture()[0] != "32bit": return value
         elif os_key == "version" and not re.match(os_value, f"{sys.getwindowsversion().major}.{sys.getwindowsversion().minor}" if platform.system() == "Windows" else platform.uname().release): return value
-
-    for features_key in rule.get("features", {}).keys():
-        if features_key == "has_custom_resolution" and not options.get("customResolution", False): return value
-        elif features_key == "is_demo_user" and not options.get("demo", False): return value
-        elif features_key == "has_quick_plays_support" and options.get("quickPlayPath") is None: return value
-        elif features_key == "is_quick_play_singleplayer" and options.get("quickPlaySingleplayer") is None: return value
-        elif features_key == "is_quick_play_multiplayer" and options.get("quickPlayMultiplayer") is None: return value
-        elif features_key == "is_quick_play_realms" and options.get("quickPlayRealms") is None: return value
 
     return not value
 
@@ -59,7 +46,7 @@ def verify(data):
 
 def extract(data):
     try: 
-        with zipfile.ZipFile(data) as file:
+        with zipfile.ZipFile(data[0]) as file:
             for f in file.namelist():
                 if ARCH not in f: continue
                 if len([i for i in re.finditer("\.", f)]) > 1: continue
@@ -69,9 +56,9 @@ def extract(data):
                 if f.endswith("LIST"): continue
                 if f.endswith("class"): continue
 
-                file.extract(f, f"{DIRECTORY}/cache/natives/")
-                shutil.move(os.path.join(f"{DIRECTORY}/cache/natives/", f), f"{DIRECTORY}/versions/{VERSION}/natives/{f.split(os.sep)[-1]}")
-    except FileNotFoundError: return (1, data)
+                file.extract(f, f"{data[1]}/cache/natives/")
+                shutil.move(os.path.join(f"{data[1]}/cache/natives/", f), f"{data[1]}/versions/{data[2]}/natives/{f.split(os.sep)[-1]}")
+    except FileNotFoundError: return (1, data[0])
     return (0, data)
 
 def download_callback(status):
@@ -101,16 +88,18 @@ def extract_callback(status):
     print("\033[1A\x1b[2K")
     print(f"Extracting natives {str(round(j * 100)).rjust(2, ' ')}% [{('█' * int(j * (WIDTH - 26))).ljust(WIDTH - 27, ' ')}]", end="")
 
-if __name__ == "__main__":
+def run(directory, version, proxy):
+    library_data = json.loads(open(f"{directory}/versions/{version}/{version}.json").read())["libraries"]
+    
     multiprocessing.freeze_support()
 
     data = []
     natives = []
-    for library in LIBRARY_DATA:
+    for library in library_data:
         if "rules" in library and (False if any([parse_rule(i, {}) for i in library["rules"]]) else True): continue
         sections = library["name"].split(":")
-        data.append((library["downloads"]["artifact"]["url"], f"{DIRECTORY}/libraries/{'/'.join(sections[0].split('.'))}/{sections[1]}/{sections[2]}/{sections[1]}-{sections[2]}{'-' + sections[3] if 3 < len(sections) else ''}.jar", {"http": f"socks5h://{PROXY}", "https": f"socks5h://{PROXY}", "socks5": f"socks5h://{PROXY}"}, library["downloads"]["artifact"]["sha1"]))
-        if "native" in library["name"]: natives.append((f"{DIRECTORY}/libraries/{'/'.join(sections[0].split('.'))}/{sections[1]}/{sections[2]}/{sections[1]}-{sections[2]}{'-' + sections[3] if 3 < len(sections) else ''}.jar"))
+        data.append((library["downloads"]["artifact"]["url"], f"{directory}/libraries/{'/'.join(sections[0].split('.'))}/{sections[1]}/{sections[2]}/{sections[1]}-{sections[2]}{'-' + sections[3] if 3 < len(sections) else ''}.jar", {"http": f"socks5h://{proxy}", "https": f"socks5h://{proxy}", "socks5": f"socks5h://{proxy}"}, library["downloads"]["artifact"]["sha1"]))
+        if "native" in library["name"]: natives.append((f"{directory}/libraries/{'/'.join(sections[0].split('.'))}/{sections[1]}/{sections[2]}/{sections[1]}-{sections[2]}{'-' + sections[3] if 3 < len(sections) else ''}.jar"))
 
     delta = 1 / len(data)
     
@@ -134,7 +123,7 @@ if __name__ == "__main__":
     pool.close()
     pool.join()
     
-    os.makedirs(os.path.dirname(f"{DIRECTORY}/versions/{VERSION}/natives/"), exist_ok=True)
+    os.makedirs(os.path.dirname(f"{directory}/versions/{version}/natives/"), exist_ok=True)
     delta = 1 / len(natives)
 
     print(natives)
@@ -144,9 +133,9 @@ if __name__ == "__main__":
 
     i, j = 0, 0
     for path in natives:
-        pool.apply_async(extract, args=(path, ), callback=extract_callback)
+        pool.apply_async(extract, args=((path, directory, version), ), callback=extract_callback)
     
     pool.close()
     pool.join()
 
-    print(f"\n\nMinecraft libraries for {VERSION} installed successfully!")
+    print(f"\n\nMinecraft libraries for {version} installed successfully!")

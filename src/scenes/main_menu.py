@@ -19,10 +19,10 @@ def get_scene(screen):
     x = 0
     labels = {}
     for line in title.split("\n"):
-        labels[f"title{x + 1}"] = Text(screen, line, (620, 30 + x * 24), "#ffffff", "assets/ubuntumono.ttf", 18)
+        labels[f"title{x + 1}"] = Text(screen, line, (620, 30 + x * 24), "#ffffff", "assets/mono.ttf", 18)
         x += 1
 
-    labels[f"title{x + 1}"] = Text(screen, "Client", (640, 320), "#ffffff", "assets/minecraft.otf", 60)
+    labels[f"title{x + 1}"] = Text(screen, "Client", (640, 320), "#ffffff", "assets/minecraft.ttf", 60)
 
     buttons = {}
     buttons["singleplayer"] = Button(screen, "Singleplayer", (640, 415), (500, 30))

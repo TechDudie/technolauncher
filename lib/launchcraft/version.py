@@ -7,11 +7,6 @@ import warnings
 warnings.filterwarnings("ignore")
 import requests
 
-DIRECTORY = "/Users/3124224/Library/Application Support/devnolauncher"
-VERSION_TYPE = "vanilla"
-VERSION = "1.20.4"
-PROXY = "192.168.86.68:1060"
-
 VANILLA_MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
 FORGE_MANIFEST_URL = "https://files.minecraftforge.net/maven/net/minecraftforge/forge/maven-metadata.xml"
 FABRIC_MANIFEST_URL = "https://meta.fabricmc.net/v2/versions/loader"
@@ -31,10 +26,8 @@ INSTALLER_URL = {
     "fabric": FABRIC_INSTALLER_URL
 }
 
-get = functools.partial(requests.get, proxies={"http": f"socks5h://{PROXY}", "https": f"socks5h://{PROXY}", "socks5": f"socks5h://{PROXY}"})
-
-def convert_version_vanilla(vanilla):
-    with open(f"{DIRECTORY}/versions/manifest_vanilla.json") as file:
+def convert_version_vanilla(directory, vanilla):
+    with open(f"{directory}/versions/manifest_vanilla.json") as file:
         manifest = json.load(file)
 
     target = vanilla
@@ -45,8 +38,8 @@ def convert_version_vanilla(vanilla):
         if version["id"] == target:
             return version["id"]
 
-def convert_version_forge(vanilla):
-    with open(f"{DIRECTORY}/versions/manifest_forge.json") as file:
+def convert_version_forge(directory, vanilla):
+    with open(f"{directory}/versions/manifest_forge.json") as file:
         manifest = file.read()
 
     forge =  {
@@ -62,14 +55,15 @@ def convert_version_forge(vanilla):
         if version.startswith(vanilla):
             return "-".join(version.split("-")[:2])
 
-def convert_version_fabric(vanilla):
-    with open(f"{DIRECTORY}/versions/manifest_vanilla.json") as file:
+def convert_version_fabric(directory, vanilla):
+    with open(f"{directory}/versions/manifest_vanilla.json") as file:
         manifest = json.load(file)
     
     # TODO
 
-def download(url, path, sha1=None):
-    r = get(url)
+def download(url, path, proxy=None, sha1=None):
+    proxies = {"http": f"socks5h://{proxy}", "https": f"socks5h://{proxy}", "socks5": f"socks5h://{proxy}"} if proxy else None
+    r = requests.get(proxies=proxies)
     if r.status_code == 200:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "wb") as file: file.write(r.content)
@@ -77,22 +71,22 @@ def download(url, path, sha1=None):
     if sha1:
         with open(path, "rb") as file: return int(not hashlib.sha1(file.read()).hexdigest() == sha1)
 
-if __name__ == "__main__":
+def run(directory, version, proxy, version_type="vanilla"):
     # TODO: Forge and Fabric
 
-    manifest_path = f"{DIRECTORY}/versions/manifest_{VERSION_TYPE}.json"
-    download(MANIFEST_URL[VERSION_TYPE], manifest_path)
+    manifest_path = f"{directory}/versions/manifest_{version_type}.json"
+    download(MANIFEST_URL[version_type], manifest_path, proxy=proxy)
     
-    if VERSION_TYPE == "vanilla":
-        version = convert_version_vanilla(VERSION)
-        version_path = f"{DIRECTORY}/versions/{version}/{version}.json"
+    if version_type == "vanilla":
+        version = convert_version_vanilla(version)
+        version_path = f"{directory}/versions/{version}/{version}.json"
 
         with open(manifest_path) as file:
             versions = json.load(file)["versions"]
         
         for v in versions:
             if v["id"] == version:
-                download(v["url"], version_path, v["sha1"])
+                download(v["url"], version_path, proxy, v["sha1"])
                 break
         
         with open(version_path) as file:
@@ -100,9 +94,11 @@ if __name__ == "__main__":
             client_data = data["downloads"]["client"]
             logging_data = data["logging"]["client"]["file"]
         
-        download(client_data["url"], f"{DIRECTORY}/versions/{version}/{version}.jar", client_data["sha1"])
-        download(logging_data["url"], f"{DIRECTORY}/config/{logging_data['id']}", logging_data["sha1"])
-    if VERSION_TYPE == "forge":
-        version = convert_version_forge(VERSION)
-    if VERSION_TYPE == "fabric":
-        version = convert_version_fabric(VERSION)
+        download(client_data["url"], f"{directory}/versions/{version}/{version}.jar", proxy, client_data["sha1"])
+        download(logging_data["url"], f"{directory}/config/{logging_data['id']}", proxy, logging_data["sha1"])
+    if version_type == "forge":
+        version = convert_version_forge(version)
+    if version_type == "fabric":
+        version = convert_version_fabric(version)
+    
+    print(f"\n\nMinecraft manifests for {version} installed successfully!")

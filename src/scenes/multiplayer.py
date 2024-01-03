@@ -7,7 +7,7 @@ def get_scene(screen):
 
     labels = {}
 
-    labels[f"title0"] = Text(screen, "Multiplayer", (640, 40), "#ffffff", "assets/minecraft.otf", 60)
+    labels[f"title0"] = Text(screen, "Multiplayer", (640, 40), "#ffffff", "assets/minecraft.ttf", 60)
 
     buttons = {}
     buttons["singleplayer"] = Button(screen, "Singleplayer", (640, 415), (500, 30))

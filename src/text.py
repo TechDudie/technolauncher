@@ -1,7 +1,7 @@
 import pygame
 
 class Text:
-    def __init__(self, screen: pygame.Surface, text, location, color="#ffffff", font="assets/minecraft.otf", size=24):
+    def __init__(self, screen: pygame.Surface, text, location, color="#ffffff", font="assets/minecraft.ttf", size=24):
         self.screen = screen
 
         self.text = text

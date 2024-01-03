@@ -6,7 +6,7 @@ class Button:
 
         self.text = text
         self.color = color
-        self.font = pygame.font.Font("assets/minecraft.otf", 24)
+        self.font = pygame.font.Font("assets/minecraft.ttf", 24)
         self.render = self.font.render(self.text, True, "#ffffff")
         self.render_size = (self.render.get_width(), self.render.get_height())
 

@@ -6,12 +6,7 @@ import warnings
 warnings.filterwarnings("ignore")
 import requests
 
-DIRECTORY = "/Users/3124224/Library/Application Support/devnolauncher"
-VERSION = "1.20.4"
-PROXY = "192.168.86.68:1060"
-
 ASSET_URL = "https://resources.download.minecraft.net"
-ASSET_DATA = json.loads(open(f"{DIRECTORY}/assets/indexes/{json.loads(open(f'{DIRECTORY}/versions/{VERSION}/{VERSION}.json').read())['assetIndex']['id']}.json").read())["objects"]
 WIDTH = os.get_terminal_size().columns
 
 def download(data):
@@ -50,10 +45,12 @@ def verify_callback(status):
     print(f"Verifying assets {str(round(j * 100)).rjust(2, ' ')}% [{('█' * int(j * (WIDTH - 24))).ljust(WIDTH - 25, ' ')}]", end="")
     
 
-if __name__ == "__main__":
+def run(directory, version, proxy):
+    asset_data = json.loads(open(f"{directory}/assets/indexes/{json.loads(open(f'{directory}/versions/{version}/{version}.json').read())['assetIndex']['id']}.json").read())["objects"]
+
     multiprocessing.freeze_support()
 
-    data = [(f"{ASSET_URL}/{asset['hash'][:2]}/{asset['hash']}", f"{DIRECTORY}/assets/objects/{asset['hash'][:2]}/{asset['hash']}", {"http": f"socks5h://{PROXY}", "https": f"socks5h://{PROXY}", "socks5": f"socks5h://{PROXY}"}, asset["hash"]) for asset in ASSET_DATA.values()]
+    data = [(f"{ASSET_URL}/{asset['hash'][:2]}/{asset['hash']}", f"{directory}/assets/objects/{asset['hash'][:2]}/{asset['hash']}", {"http": f"socks5h://{proxy}", "https": f"socks5h://{proxy}", "socks5": f"socks5h://{proxy}"} if proxy else None, asset["hash"]) for asset in asset_data.values()]
     delta = 1 / len(data)
     
     pool = multiprocessing.Pool(multiprocessing.cpu_count())
@@ -76,4 +73,4 @@ if __name__ == "__main__":
     pool.close()
     pool.join()
 
-    print(f"\n\nMinecraft assets for {VERSION} installed successfully!")
+    print(f"\n\nMinecraft assets for {version} installed successfully!")
