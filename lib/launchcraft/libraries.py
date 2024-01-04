@@ -1,18 +1,18 @@
-import hashlib
-import json
-import multiprocessing
-import os
-import platform
-import re
-import shutil
-import sys
-import warnings
-import zipfile
-warnings.filterwarnings("ignore")
-import requests
+from hashlib import sha1
+from json import loads
+from multiprocessing import cpu_count, freeze_support, Pool
+from os import get_terminal_size, makedirs, path, sep
+from platform import architecture, system, uname, version
+from re import finditer, match
+from shutil import move
+from sys import getwindowsversion
+from warnings import filterwarnings
+from zipfile import ZipFile
+filterwarnings("ignore")
+from requests import get
 
-ARCH = {"X86_64": "x64", "ARM64": "arm64"}["".join([i if i in platform.version() else "" for i in ["X86_64", "ARM64"]])]
-WIDTH = os.get_terminal_size().columns
+ARCH = {"X86_64": "x64", "ARM64": "arm64"}["".join([i if i in version() else "" for i in ["X86_64", "ARM64"]])]
+WIDTH = get_terminal_size().columns
 
 def parse_rule(rule, options) -> bool:
     if rule["action"] == "allow": value = False
@@ -20,20 +20,20 @@ def parse_rule(rule, options) -> bool:
 
     for os_key, os_value in rule.get("os", {}).items():
         if os_key == "name":
-            if os_value == "windows" and platform.system() != 'Windows': return value
-            elif os_value == "osx" and platform.system() != 'Darwin': return value
-            elif os_value == "linux" and platform.system() != 'Linux': return value
-        elif os_key == "arch" and os_value == "x86" and platform.architecture()[0] != "32bit": return value
-        elif os_key == "version" and not re.match(os_value, f"{sys.getwindowsversion().major}.{sys.getwindowsversion().minor}" if platform.system() == "Windows" else platform.uname().release): return value
+            if os_value == "windows" and system() != 'Windows': return value
+            elif os_value == "osx" and system() != 'Darwin': return value
+            elif os_value == "linux" and system() != 'Linux': return value
+        elif os_key == "arch" and os_value == "x86" and architecture()[0] != "32bit": return value
+        elif os_key == "version" and not match(os_value, f"{getwindowsversion().major}.{getwindowsversion().minor}" if system() == "Windows" else uname().release): return value
 
     return not value
 
 def download(data):
-    if os.path.exists(data[1]): return (2, data)
+    if path.exists(data[1]): return (2, data)
     
-    r = requests.get(data[0], proxies=data[2])
+    r = get(data[0], proxies=data[2])
     if r.status_code == 200:
-        os.makedirs(os.path.dirname(data[1]), exist_ok=True)
+        makedirs(path.dirname(data[1]), exist_ok=True)
         with open(data[1], "wb") as file: file.write(r.content)
     else: return (1, data)
     return (0, data)
@@ -42,22 +42,22 @@ def verify(data):
     try: open(data[1], "rb")
     except FileNotFoundError: return (2, data)
     
-    with open(data[1], "rb") as file: return (int(not hashlib.sha1(file.read()).hexdigest() == data[3]), data)
+    with open(data[1], "rb") as file: return (int(not sha1(file.read()).hexdigest() == data[3]), data)
 
 def extract(data):
     try: 
-        with zipfile.ZipFile(data[0]) as file:
+        with ZipFile(data[0]) as file:
             for f in file.namelist():
                 if ARCH not in f: continue
-                if len([i for i in re.finditer("\.", f)]) > 1: continue
+                if len([i for i in finditer("\.", f)]) > 1: continue
 
-                if f.endswith(os.sep): continue
+                if f.endswith(sep): continue
                 if f.endswith("MF"): continue
                 if f.endswith("LIST"): continue
                 if f.endswith("class"): continue
 
                 file.extract(f, f"{data[1]}/cache/natives/")
-                shutil.move(os.path.join(f"{data[1]}/cache/natives/", f), f"{data[1]}/versions/{data[2]}/natives/{f.split(os.sep)[-1]}")
+                move(path.join(f"{data[1]}/cache/natives/", f), f"{data[1]}/versions/{data[2]}/natives/{f.split(sep)[-1]}")
     except FileNotFoundError: return (1, data[0])
     return (0, data)
 
@@ -89,9 +89,9 @@ def extract_callback(status):
     print(f"Extracting natives {str(round(j * 100)).rjust(2, ' ')}% [{('█' * int(j * (WIDTH - 26))).ljust(WIDTH - 27, ' ')}]", end="")
 
 def run(directory, version, proxy):
-    library_data = json.loads(open(f"{directory}/versions/{version}/{version}.json").read())["libraries"]
+    library_data = loads(open(f"{directory}/versions/{version}/{version}.json").read())["libraries"]
     
-    multiprocessing.freeze_support()
+    freeze_support()
 
     data = []
     natives = []
@@ -103,7 +103,7 @@ def run(directory, version, proxy):
 
     delta = 1 / len(data)
     
-    pool = multiprocessing.Pool(multiprocessing.cpu_count())
+    pool = Pool(cpu_count())
 
     print("")
     i, j = 0, 0
@@ -114,7 +114,7 @@ def run(directory, version, proxy):
     pool.join()
 
     print("\n")
-    pool = multiprocessing.Pool(multiprocessing.cpu_count())
+    pool = Pool(cpu_count())
 
     i, j = 0, 0
     for asset in data:
@@ -123,13 +123,13 @@ def run(directory, version, proxy):
     pool.close()
     pool.join()
     
-    os.makedirs(os.path.dirname(f"{directory}/versions/{version}/natives/"), exist_ok=True)
+    makedirs(path.dirname(f"{directory}/versions/{version}/natives/"), exist_ok=True)
     delta = 1 / len(natives)
 
     print(natives)
 
     print("\n")
-    pool = multiprocessing.Pool(multiprocessing.cpu_count())
+    pool = Pool(cpu_count())
 
     i, j = 0, 0
     for path in natives:
