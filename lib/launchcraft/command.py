@@ -1,9 +1,9 @@
-from json import load
-from os import get_terminal_size
-from platform import architecture, system, uname
-from re import match
-from subprocess import run as run_
-from sys import getwindowsversion
+import json
+import os
+import platform
+import re
+import subprocess
+import sys
 
 USERNAME = "TechnoDot"
 UUID = "9a467ecf8eaf4d9cb44050eb9b60581a"
@@ -15,16 +15,24 @@ def parse_rule(rule, options) -> bool:
 
     for os_key, os_value in rule.get("os", {}).items():
         if os_key == "name":
-            if os_value == "windows" and system() != 'Windows': return value
-            elif os_value == "osx" and system() != 'Darwin': return value
-            elif os_value == "linux" and system() != 'Linux': return value
-        elif os_key == "arch" and os_value == "x86" and architecture()[0] != "32bit": return value
-        elif os_key == "version" and not match(os_value, f"{getwindowsversion().major}.{getwindowsversion().minor}" if system() == "Windows" else uname().release): return value
+            if os_value == "windows" and platform.system() != 'Windows': return value
+            elif os_value == "osx" and platform.system() != 'Darwin': return value
+            elif os_value == "linux" and platform.system() != 'Linux': return value
+        elif os_key == "arch" and os_value == "x86" and platform.architecture()[0] != "32bit": return value
+        elif os_key == "version" and not re.match(os_value, f"{sys.getwindowsversion().major}.{sys.getwindowsversion().minor}" if platform.system() == "Windows" else platform.uname().release): return value
+
+    for features_key in rule.get("features", {}).keys():
+        if features_key == "has_custom_resolution" and not options.get("customResolution", False): return value
+        elif features_key == "is_demo_user" and not options.get("demo", False): return value
+        elif features_key == "has_quick_plays_support" and options.get("quickPlayPath") is None: return value
+        elif features_key == "is_quick_play_singleplayer" and options.get("quickPlaySingleplayer") is None: return value
+        elif features_key == "is_quick_play_multiplayer" and options.get("quickPlayMultiplayer") is None: return value
+        elif features_key == "is_quick_play_realms" and options.get("quickPlayRealms") is None: return value
 
     return not value
 
 def classpath(data, version, directory):
-    sep = ";" if system() == "Windows" else ":"
+    sep = ";" if platform.system() == "Windows" else ":"
     libraries = ""
 
     for library in data["libraries"]:
@@ -103,18 +111,18 @@ def run(directory, version, proxy, java_type="jre"):
         java_version = java["default"]
 
     with open(f"{directory}/versions/{version}/{version}.json") as file:
-        data = load(file)
+        data = json.load(file)
 
     command = [{
         "Windows": f"{directory}/java/{java_version}/bin/java.exe",
         "Darwin": f"{directory}/java/{java_version}/zulu-{java_version}.{java_type.lower()}/Contents/Home/bin/java",
         "Linux": f"{directory}/java/{java_version}/bin/java"
-    }[system()]]
+    }[platform.system()]]
 
     command += jvm_arguments(data, version, directory)
     command.append(data["mainClass"])
     command += game_arguments(data, version, directory)
 
-    print(f"Launching Minecraft {version}...\n\n{'=' * get_terminal_size().columns}\n")
+    print(f"Launching Minecraft {version}...\n\n{'=' * os.get_terminal_size().columns}\n")
 
-    run_(command)
+    subprocess.run(command)

@@ -1,9 +1,11 @@
-from json import load
-from os import makedirs
-from re import findall, MULTILINE, search
-from warnings import filterwarnings
-filterwarnings("ignore")
-from requests import get
+import functools
+import hashlib
+import json
+import os
+import re
+import warnings
+warnings.filterwarnings("ignore")
+import requests
 
 VANILLA_MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
 FORGE_MANIFEST_URL = "https://files.minecraftforge.net/maven/net/minecraftforge/forge/maven-metadata.xml"
@@ -26,7 +28,7 @@ INSTALLER_URL = {
 
 def convert_version_vanilla(directory, vanilla):
     with open(f"{directory}/versions/manifest_vanilla.json") as file:
-        manifest = load(file)
+        manifest = json.load(file)
 
     target = vanilla
     if vanilla in ["release", "snapshot"]:
@@ -41,9 +43,9 @@ def convert_version_forge(directory, vanilla):
         manifest = file.read()
 
     forge =  {
-        "release": search("(?<=<release>).*?(?=</release>)", manifest, MULTILINE).group(),
-        "latest": search("(?<=<latest>).*?(?=</latest>)", manifest, MULTILINE).group(),
-        "versions": findall("(?<=<version>).*?(?=</version>)", manifest, MULTILINE)
+        "release": re.search("(?<=<release>).*?(?=</release>)", manifest, re.MULTILINE).group(),
+        "latest": re.search("(?<=<latest>).*?(?=</latest>)", manifest, re.MULTILINE).group(),
+        "versions": re.findall("(?<=<version>).*?(?=</version>)", manifest, re.MULTILINE)
     }
 
     if vanilla in ["release", "latest"]:
@@ -55,19 +57,19 @@ def convert_version_forge(directory, vanilla):
 
 def convert_version_fabric(directory, vanilla):
     with open(f"{directory}/versions/manifest_vanilla.json") as file:
-        manifest = load(file)
+        manifest = json.load(file)
     
     # TODO
 
 def download(url, path, proxy=None, sha1=None):
     proxies = {"http": f"socks5h://{proxy}", "https": f"socks5h://{proxy}", "socks5": f"socks5h://{proxy}"} if proxy else None
-    r = get(proxies=proxies)
+    r = requests.get(proxies=proxies)
     if r.status_code == 200:
-        makedirs(path.dirname(path), exist_ok=True)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "wb") as file: file.write(r.content)
     
     if sha1:
-        with open(path, "rb") as file: return int(not sha1(file.read()).hexdigest() == sha1)
+        with open(path, "rb") as file: return int(not hashlib.sha1(file.read()).hexdigest() == sha1)
 
 def run(directory, version, proxy, version_type="vanilla"):
     # TODO: Forge and Fabric
@@ -80,7 +82,7 @@ def run(directory, version, proxy, version_type="vanilla"):
         version_path = f"{directory}/versions/{version}/{version}.json"
 
         with open(manifest_path) as file:
-            versions = load(file)["versions"]
+            versions = json.load(file)["versions"]
         
         for v in versions:
             if v["id"] == version:
@@ -88,7 +90,7 @@ def run(directory, version, proxy, version_type="vanilla"):
                 break
         
         with open(version_path) as file:
-            data = load(file)
+            data = json.load(file)
             client_data = data["downloads"]["client"]
             logging_data = data["logging"]["client"]["file"]
         

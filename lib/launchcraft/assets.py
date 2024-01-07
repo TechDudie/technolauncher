@@ -1,20 +1,20 @@
-from hashlib import sha1
-from json import loads
-from multiprocessing import cpu_count, freeze_support, Pool
-from os import get_terminal_size, makedirs, path
-from warnings import filterwarnings
-filterwarnings("ignore")
-from requests import get
+import hashlib
+import json
+import multiprocessing
+import os
+import warnings
+warnings.filterwarnings("ignore")
+import requests
 
 ASSET_URL = "https://resources.download.minecraft.net"
-WIDTH = get_terminal_size().columns
+WIDTH = os.get_terminal_size().columns
 
 def download(data):
-    if path.exists(data[1]): return (2, data)
+    if os.path.exists(data[1]): return (2, data)
     
-    r = get(data[0], proxies=data[2])
+    r = requests.get(data[0], proxies=data[2])
     if r.status_code == 200:
-        makedirs(path.dirname(data[1]), exist_ok=True)
+        os.makedirs(os.path.dirname(data[1]), exist_ok=True)
         with open(data[1], "wb") as file: file.write(r.content)
     else: return (1, data)
     return (0, data)
@@ -23,7 +23,7 @@ def verify(data):
     try: open(data[1], "rb")
     except FileNotFoundError: return (2, data)
     
-    with open(data[1], "rb") as file: return (int(not sha1(file.read()).hexdigest() == data[3]), data)
+    with open(data[1], "rb") as file: return (int(not hashlib.sha1(file.read()).hexdigest() == data[3]), data)
 
 def download_callback(status):
     global i, j, delta
@@ -46,14 +46,14 @@ def verify_callback(status):
     
 
 def run(directory, version, proxy):
-    asset_data = loads(open(f"{directory}/assets/indexes/{loads(open(f'{directory}/versions/{version}/{version}.json').read())['assetIndex']['id']}.json").read())["objects"]
+    asset_data = json.loads(open(f"{directory}/assets/indexes/{json.loads(open(f'{directory}/versions/{version}/{version}.json').read())['assetIndex']['id']}.json").read())["objects"]
 
-    freeze_support()
+    multiprocessing.freeze_support()
 
     data = [(f"{ASSET_URL}/{asset['hash'][:2]}/{asset['hash']}", f"{directory}/assets/objects/{asset['hash'][:2]}/{asset['hash']}", {"http": f"socks5h://{proxy}", "https": f"socks5h://{proxy}", "socks5": f"socks5h://{proxy}"} if proxy else None, asset["hash"]) for asset in asset_data.values()]
     delta = 1 / len(data)
     
-    pool = Pool(cpu_count())
+    pool = multiprocessing.Pool(multiprocessing.cpu_count())
 
     print("")
     i, j = 0, 0
@@ -63,7 +63,7 @@ def run(directory, version, proxy):
     pool.close()
     pool.join()
 
-    pool = Pool(cpu_count())
+    pool = multiprocessing.Pool(multiprocessing.cpu_count())
 
     print("\n")
     i, j = 0, 0
