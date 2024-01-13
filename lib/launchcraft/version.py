@@ -1,4 +1,3 @@
-import functools
 import hashlib
 import json
 import os
@@ -56,14 +55,14 @@ def convert_version_forge(directory, vanilla):
             return "-".join(version.split("-")[:2])
 
 def convert_version_fabric(directory, vanilla):
-    with open(f"{directory}/versions/manifest_vanilla.json") as file:
+    with open(f"{directory}/versions/manifest_fabric.json") as file:
         manifest = json.load(file)
     
     # TODO
 
 def download(url, path, proxy=None, sha1=None):
     proxies = {"http": f"socks5h://{proxy}", "https": f"socks5h://{proxy}", "socks5": f"socks5h://{proxy}"} if proxy else None
-    r = requests.get(proxies=proxies)
+    r = requests.get(url, proxies=proxies)
     if r.status_code == 200:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "wb") as file: file.write(r.content)

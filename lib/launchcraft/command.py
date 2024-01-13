@@ -21,14 +21,6 @@ def parse_rule(rule, options) -> bool:
         elif os_key == "arch" and os_value == "x86" and platform.architecture()[0] != "32bit": return value
         elif os_key == "version" and not re.match(os_value, f"{sys.getwindowsversion().major}.{sys.getwindowsversion().minor}" if platform.system() == "Windows" else platform.uname().release): return value
 
-    for features_key in rule.get("features", {}).keys():
-        if features_key == "has_custom_resolution" and not options.get("customResolution", False): return value
-        elif features_key == "is_demo_user" and not options.get("demo", False): return value
-        elif features_key == "has_quick_plays_support" and options.get("quickPlayPath") is None: return value
-        elif features_key == "is_quick_play_singleplayer" and options.get("quickPlaySingleplayer") is None: return value
-        elif features_key == "is_quick_play_multiplayer" and options.get("quickPlayMultiplayer") is None: return value
-        elif features_key == "is_quick_play_realms" and options.get("quickPlayRealms") is None: return value
-
     return not value
 
 def classpath(data, version, directory):

@@ -1,4 +1,8 @@
-from lib.launchcraft import *
+import lib.launchcraft.assets as assets
+import lib.launchcraft.command as command
+import lib.launchcraft.java as java
+import lib.launchcraft.libraries as libraries
+import lib.launchcraft.version as version
 
 DIRECTORY = "/Users/3124224/Library/Application Support/devnolauncher"
 VERSION = "1.20.4"
