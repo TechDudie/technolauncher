@@ -8,10 +8,6 @@ warnings.filterwarnings("ignore")
 import requests
 
 def run(directory, version, proxy, java_type="jre"):
-    directory = "/Users/3124224/Library/Application Support/devnolauncher"
-    version = "1.20.4"
-    proxy = "192.168.86.68:1060"
-
     java = {
         "1.20.4": "21",
         "1.8.9": "8",

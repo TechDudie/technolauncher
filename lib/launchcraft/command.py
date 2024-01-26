@@ -77,10 +77,6 @@ def game_arguments(data, version, directory):
             arguments[i] = UUID
         elif argument == "${auth_access_token}":
             arguments[i] = TOKEN
-        # elif argument == "${clientid}":
-        #     arguments[i] = USERNAME
-        # elif argument == "${auth_xuid}":
-        #     arguments[i] = USERNAME
         elif argument == "${user_type}":
             arguments[i] = "msa"
         elif argument == "${version_type}":

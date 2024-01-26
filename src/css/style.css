@@ -1,4 +1,97 @@
+@import url("fonts/minecraft.css");
+@import url("fonts/ubuntu-mono.css");
+
 body {
     background-image: url("../../resources/themes/classic/background.png");
     background-repeat: repeat;
+}
+
+@keyframes showUI {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+#master {
+    animation: showUI 0.5s;
+}
+
+img {
+    width: 480px;
+    height: 137px;
+
+    display: block;
+
+    margin-top: 28px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 36px;
+}
+
+button {
+    width: 400px;
+    height: 40px;
+
+    display: block;
+    border: none;
+    empty-cells: show;
+    text-align: center;
+    text-decoration: none;
+
+    background-image: url("../../resources/themes/classic/button.png");
+    image-rendering: pixelated;
+
+    margin-top: 8px;
+    margin-bottom: 8px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+button:hover {
+    background-image: url("../../resources/themes/classic/button_highlighted.png");
+    image-rendering: pixelated;
+}
+
+#options-quit {
+    text-align: center;
+
+    margin-top: 32px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#options, #quit {
+    background-image: url("../../resources/themes/classic/button_short.png");
+    image-rendering: pixelated;
+
+    width: 192px;
+    
+    display: inline-block;
+}
+
+#options:hover, #quit:hover {
+    background-image: url("../../resources/themes/classic/button_short_highlighted.png");
+    image-rendering: pixelated;
+}
+
+#options {
+    margin-right: 8px;
+}
+
+#quit {
+    margin-left: 8px;
+}
+
+button > span {
+    font-family: "Minecraft";
+    font-size: 20px;
+    font-weight: 1;
+    color: white;
+
+    display: inline-block;
+    vertical-align: middle;
+    line-height: 0px;
+
+    transform: translate(0px, -1px); 
+
+    text-shadow: 2px 2px 0 #333333
 }
