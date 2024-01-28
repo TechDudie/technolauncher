@@ -8,7 +8,6 @@ const createWindow = () => {
         icon: "resources/icons/icon.png",
         show: false,
         webPreferences: {
-            preload: "src/preload.js",
             nodeIntegration: false,
             enableRemoteModule: false,
             contextIsolation: true,
