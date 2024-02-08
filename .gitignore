@@ -1,6 +1,1 @@
-node_modules/
-out/
 tests/
-.DS_Store
-fabricloader.log
-logs
